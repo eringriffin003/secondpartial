@@ -250,7 +250,32 @@ noncomputable def getbilin {n : ℕ} (g : ContinuousMultilinearMap ℝ
             · exact continuous_const
     }
 
-theorem second_partial_deriv_test {n : ℕ}
+theorem second_partial_deriv_test_for_deg_two {n : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {x₀ : EuclideanSpace ℝ (Fin n)}
+    (h : ∀ x, f x = f x₀ + inner ℝ (gradient f x₀) (x - x₀) + (1 / 2) * hessianForm f x₀ (x - x₀))
     (h₀ : gradient f x₀ = 0) (hQQ : (hessianForm f x₀).PosDef) : IsLocalMin f x₀ := by
-  sorry
+  unfold IsLocalMin IsMinFilter
+  refine Filter.eventually_iff_exists_mem.mpr ?_
+  use Set.univ
+  constructor
+  · simp
+  · intro y _
+    rw [h y]
+    rw [h₀]
+    simp
+    exact QuadraticMap.PosDef.nonneg hQQ (y - x₀)
+
+example (a b c d : ℝ) (f : EuclideanSpace ℝ (Fin 2) → ℝ) (x₀ : EuclideanSpace ℝ (Fin 2))
+    (h : ∀ x y, f ![x, y] = a * x ^ 2 + b * x * y + c * y ^ 2 + d) :
+    ∀ x, f x = f x₀ + inner ℝ (gradient f x₀) (x - x₀) + (1 / 2) * hessianForm f x₀ (x - x₀)
+    := sorry
+
+example : MvPolynomial (Fin 2) ℝ := {
+    toFun := fun p => by
+        let c := p.toFun
+        let s := p.support
+        -- output: the coefficient of x^c 0 y^c 1
+        sorry
+    support           := sorry
+    mem_support_toFun := sorry
+}
