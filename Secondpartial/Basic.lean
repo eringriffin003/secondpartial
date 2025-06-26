@@ -97,16 +97,20 @@ noncomputable def theFun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
       linarith
   }
 
-noncomputable def theQuad {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
-    (x₀ : EuclideanSpace ℝ (Fin n)) (h₀ : gradient f x₀ = 0)
-    (had : let g := iteratedFDeriv ℝ 2 f x₀
+noncomputable def hessianForm {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x₀ : EuclideanSpace ℝ (Fin n)) :
+  QuadraticMap ℝ (EuclideanSpace ℝ (Fin n)) ℝ := by
+    have hsm :
+      let g := iteratedFDeriv ℝ 2 f x₀
+      ∀ (m : Fin 2 → EuclideanSpace ℝ (Fin n)) (i : Fin 2) (c : ℝ) (x : EuclideanSpace ℝ (Fin n)),
+      g.toFun (Function.update m i (c • x)) = c • g.toFun (Function.update m i x) :=
+      (iteratedFDeriv ℝ 2 f x₀).map_update_smul'
+
+    have had : let g := iteratedFDeriv ℝ 2 f x₀
       ∀ (m : Fin 2 → EuclideanSpace ℝ (Fin n)) (i : Fin 2) (x y : EuclideanSpace ℝ (Fin n)),
       g.toFun (Function.update m i (x + y)) = g.toFun (Function.update m i x)
-                                            + g.toFun (Function.update m i y))
-    (hsm : let g := iteratedFDeriv ℝ 2 f x₀
-      ∀ (m : Fin 2 → EuclideanSpace ℝ (Fin n)) (i : Fin 2) (c : ℝ) (x : EuclideanSpace ℝ (Fin n)),
-      g.toFun (Function.update m i (c • x)) = c • g.toFun (Function.update m i x)) :
-  QuadraticMap ℝ (EuclideanSpace ℝ (Fin n)) ℝ := by
+    + g.toFun (Function.update m i y) := (iteratedFDeriv ℝ 2 f x₀).map_update_add'
+
     let Q₁ := fun y => iteratedFDeriv ℝ 2 f x₀ ![y,y]
     exact {
     toFun := Q₁
@@ -118,33 +122,81 @@ noncomputable def theQuad {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
           intro x y
           simp
           let g := theFun f x₀ had hsm (x+y)
-          -- easy
-          sorry
+          simp [theFun]
+          ext i
+          simp
+          have : (iteratedFDeriv ℝ 2 f x₀) ![x + y, i]  =
+                 (iteratedFDeriv ℝ 2 f x₀) ![x, i] +
+                 (iteratedFDeriv ℝ 2 f x₀) ![y, i] := by
+            have had₀ := had ![x,i] 0 x y
+            repeat rw [DM₀] at had₀
+            simp at had₀
+            exact had₀
+          have : (iteratedFDeriv ℝ 2 f x₀) ![i, x + y] =
+                 (iteratedFDeriv ℝ 2 f x₀) ![i, x] +
+                 (iteratedFDeriv ℝ 2 f x₀) ![i, y] := by
+            have had₁ := had ![i,i] 1 x y
+            repeat rw [DM₁] at had₁
+            simp at had₁
+            exact had₁
+          linarith
         map_smul' := by
           intro m x
           simp
           refine LinearMap.ext_iff.mpr ?_
           intro x₁
           simp
-          -- easy
-          sorry
+          unfold theFun
+
+          have hsm₀ := hsm ![x,x₁] 0 m x
+          repeat rw [DM₀] at hsm₀
+          simp at hsm₀
+          simp
+          rw [hsm₀]
+          have hsm₁ := hsm ![x₁,x] 1 m x
+          repeat rw [DM₁] at hsm₁
+          simp at hsm₁
+          rw [hsm₁]
+          linarith
       }
       intro x y
       simp [Q₁]
-      /- need linearity property of iteratedFDeriv
-      but it is already a ContinuousMultilinearMap
-      -/
-      sorry
+      unfold theFun
+      simp
+      have had₀ := had ![x, x + y] 0 x y
+      repeat rw [DM₀] at had₀
+      simp at had₀
+      rw [had₀]
+
+      have : (iteratedFDeriv ℝ 2 f x₀) ![x, x + y] =
+                (iteratedFDeriv ℝ 2 f x₀) ![x, x] +
+                (iteratedFDeriv ℝ 2 f x₀) ![x, y] := by
+        have had₁ := had ![x,x] 1 x y
+        repeat rw [DM₁] at had₁
+        simp at had₁
+        exact had₁
+      have : (iteratedFDeriv ℝ 2 f x₀) ![y, x + y] =
+                (iteratedFDeriv ℝ 2 f x₀) ![y, x] +
+                (iteratedFDeriv ℝ 2 f x₀) ![y, y] := by
+        have had₁ := had ![y,x] 1 x y
+        repeat rw [DM₁] at had₁
+        simp at had₁
+        exact had₁
+      linarith
     toFun_smul := by
       intro u v
       simp [Q₁]
-      have := hsm ![v, v] 0 u v
-      sorry
+      have hsm₀ := hsm ![v, v] 0 u v
+      repeat rw [DM₀] at hsm₀
+      simp at hsm₀
+      rw [mul_assoc]
+      rw [← hsm₀]
+      have hsm₁ := hsm ![u • v,v] 1 u v
+      repeat rw [DM₁] at hsm₁
+      convert hsm₁ using 1
   }
 
 theorem second_partial_deriv_test {n : ℕ}
-    (f : EuclideanSpace ℝ (Fin n) → ℝ) (x₀ : EuclideanSpace ℝ (Fin n))
-    (h₀ : gradient f x₀ = 0) (hQQ : (theQuad f x₀ h₀
-    (iteratedFDeriv ℝ 2 f x₀).map_update_add'
-    (iteratedFDeriv ℝ 2 f x₀).map_update_smul').PosDef) : IsLocalMin f x₀ := by
+    {f : EuclideanSpace ℝ (Fin n) → ℝ} {x₀ : EuclideanSpace ℝ (Fin n)}
+    (h₀ : gradient f x₀ = 0) (hQQ : (hessianForm f x₀).PosDef) : IsLocalMin f x₀ := by
   sorry
