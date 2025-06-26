@@ -100,13 +100,13 @@ noncomputable def theFun {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
 noncomputable def hessianForm {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x₀ : EuclideanSpace ℝ (Fin n)) :
   QuadraticMap ℝ (EuclideanSpace ℝ (Fin n)) ℝ := by
+    let g := (iteratedFDeriv ℝ 2 f x₀)
     have hsm :
-      let g := iteratedFDeriv ℝ 2 f x₀
       ∀ (m : Fin 2 → EuclideanSpace ℝ (Fin n)) (i : Fin 2) (c : ℝ) (x : EuclideanSpace ℝ (Fin n)),
       g.toFun (Function.update m i (c • x)) = c • g.toFun (Function.update m i x) :=
       (iteratedFDeriv ℝ 2 f x₀).map_update_smul'
 
-    have had : let g := iteratedFDeriv ℝ 2 f x₀
+    have had :
       ∀ (m : Fin 2 → EuclideanSpace ℝ (Fin n)) (i : Fin 2) (x y : EuclideanSpace ℝ (Fin n)),
       g.toFun (Function.update m i (x + y)) = g.toFun (Function.update m i x)
     + g.toFun (Function.update m i y) := (iteratedFDeriv ℝ 2 f x₀).map_update_add'
@@ -195,6 +195,60 @@ noncomputable def hessianForm {n : ℕ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
       repeat rw [DM₁] at hsm₁
       convert hsm₁ using 1
   }
+
+/-- A continuous multilinear map is, in particular, bilinear
+in the sense needed to consider the `IsCoercive` proposition. -/
+noncomputable def getbilin {n : ℕ} (g : ContinuousMultilinearMap ℝ
+    (fun _ : Fin 2 ↦ EuclideanSpace ℝ (Fin n)) ℝ) :
+    (EuclideanSpace ℝ (Fin n)) →L[ℝ] (EuclideanSpace ℝ (Fin n)) →L[ℝ] ℝ := {
+        toFun := fun x => {
+            toFun := fun y => g.toFun ![x,y]
+            map_add' := by
+                intro a b
+                have := g.map_update_add ![x,b] 1 a b
+                repeat rw [DM₁] at this
+                exact this
+            map_smul' := by
+                intro m a
+                have := g.map_update_smul ![x,a] 1 m a
+                repeat rw [DM₁] at this
+                exact this
+            cont := by
+                have := g.cont
+                refine Continuous.comp' this ?_
+                simp
+                refine Continuous.matrixVecCons ?_ ?_
+                · exact continuous_const
+                · refine Continuous.matrixVecCons ?_ ?_
+                  · exact continuous_id'
+                  · exact continuous_const
+        }
+        map_add' := by
+            intro a b
+            ext c
+            simp
+            have := g.map_update_add ![a,c] 0 a b
+            repeat rw [DM₀] at this
+            exact this
+        map_smul' := by
+            intro c x
+            ext y
+            simp
+            have := g.map_update_smul ![x,y] 0 c x
+            repeat rw [DM₀] at this
+            exact this
+        cont := by
+            simp
+            have := g.cont
+            refine continuous_clm_apply.mpr ?_
+            intro x
+            simp
+            refine Continuous.comp' this ?_
+            simp
+            refine Continuous.matrixVecCons ?_ ?_
+            · exact continuous_id'
+            · exact continuous_const
+    }
 
 theorem second_partial_deriv_test {n : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {x₀ : EuclideanSpace ℝ (Fin n)}
