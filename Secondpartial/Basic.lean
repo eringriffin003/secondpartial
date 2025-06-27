@@ -181,8 +181,7 @@ theorem second_partial_deriv_test_for_deg_two {n : ℕ}
 noncomputable def higher_taylor_coeff {n : ℕ}
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :=
     fun x =>
-    (1 / Nat.factorial k) * (fun y => iteratedFDeriv ℝ k f x₀
-        fun i => Fin.repeat k ![y] ⟨i.1,by omega⟩) (x - x₀)
+    (1 / Nat.factorial k) * (iteratedFDeriv ℝ k f x₀ fun _ => x - x₀)
 
 noncomputable def higher_taylor {n : ℕ}
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
@@ -194,9 +193,9 @@ noncomputable def higher_taylor {n : ℕ}
 theorem second_partial_deriv_test_for_deg_two' {n : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {x₀ : EuclideanSpace ℝ (Fin n)}
     (h : ∀ x, f x
-      = (1 / Nat.factorial 0) * (fun y => iteratedFDeriv ℝ 0 f x₀ (Fin.repeat 0 ![y])) (x - x₀)
-      + (1 / Nat.factorial 1) * (fun y => iteratedFDeriv ℝ 1 f x₀ (Fin.repeat 1 ![y])) (x - x₀)
-      + (1 / Nat.factorial 2) * (fun y => iteratedFDeriv ℝ 2 f x₀ (Fin.repeat 2 ![y])) (x - x₀))
+      = (1 / Nat.factorial 0) * (iteratedFDeriv ℝ 0 f x₀ fun _ => x - x₀)
+      + (1 / Nat.factorial 1) * (iteratedFDeriv ℝ 1 f x₀ fun _ => x - x₀)
+      + (1 / Nat.factorial 2) * (iteratedFDeriv ℝ 2 f x₀ fun _ => x - x₀))
     (h₀ : gradient f x₀ = 0) (hQQ : (hessianQuadraticMap f x₀).PosDef) :
     IsLocalMin f x₀ := Filter.eventually_iff_exists_mem.mpr <| by
   use Set.univ
@@ -205,7 +204,7 @@ theorem second_partial_deriv_test_for_deg_two' {n : ℕ}
   · intro y _
     have h : ∀ x, f x
       = (1 / Nat.factorial 0) * iteratedFDeriv ℝ 0 f x₀ ![]
-      + (1 / Nat.factorial 1) * (fun y => iteratedFDeriv ℝ 1 f x₀ (Fin.repeat 1 ![y])) (x - x₀)
+      + (1 / Nat.factorial 1) * (iteratedFDeriv ℝ 1 f x₀ (fun _ => x - x₀))
       + (1 / Nat.factorial 2) * (fun y => iteratedFDeriv ℝ 2 f x₀ ![y, y]) (x - x₀)
                   := by
                   intro x
@@ -222,7 +221,7 @@ theorem second_partial_deriv_test_for_deg_two' {n : ℕ}
                   intro x
                   convert h x using 2
                   congr
-                  simp
+                  ext;simp
     have h₁ : inner ℝ (gradient f x₀) (y - x₀) = (fderiv ℝ f x₀) (y - x₀) := by
         unfold gradient
         simp
